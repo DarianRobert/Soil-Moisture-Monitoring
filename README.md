@@ -41,7 +41,12 @@ See [hardware and technology choices](docs/HARDWARE.md) for the wiring and reaso
 
 ## Start on a Raspberry Pi
 
-Use Raspberry Pi OS and work from this project directory.
+Clone this portfolio copy, then use Raspberry Pi OS and work from the project directory:
+
+```bash
+git clone https://github.com/DarianRobert/Soil-Moisture-Monitoring.git
+cd Soil-Moisture-Monitoring
+```
 
 1. Wire the probe: **red to Uno 5V, black to GND, yellow to A0; leave white disconnected**.
 2. Open `arduino/moisture_node/moisture_node.ino` in Arduino IDE. Select the classic Arduino Uno and its port, then upload. No additional Arduino libraries are needed.
@@ -134,6 +139,12 @@ See [verification details](docs/TESTING.md) for the tested environment, coverage
 | `tools/analyze.py` | Summary of exported experimental data |
 | `tests/` | Supplied software checks |
 | `docs/` | Project report and hardware, operating and verification documentation |
+
+## My role and project provenance
+
+I am one of the five credited authors of this UKZN team project. This portfolio fork preserves the shared implementation and the [original team repository's commit history](https://github.com/ArjunRamphal/garden-iot-watering-guidance).
+
+The earlier report-only portfolio copy, including its LaTeX source and diagrams, remains available in [Soil-Moisture-Monitoring-Legacy](https://github.com/DarianRobert/Soil-Moisture-Monitoring-Legacy/tree/main/report).
 
 ## Project team
 
