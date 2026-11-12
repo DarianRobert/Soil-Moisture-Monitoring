@@ -1,4 +1,3 @@
-
 import csv
 import io
 import json
@@ -73,8 +72,10 @@ class Store:
         with self.connect() as db:
             db.execute("PRAGMA journal_mode=WAL")
             db.executescript(SCHEMA)
-            db.execute("INSERT OR IGNORE INTO settings VALUES(1,?)",
-                       (json.dumps(DEFAULT_SETTINGS),))
+            db.execute(
+                "INSERT OR IGNORE INTO settings VALUES(1,?)",
+                (json.dumps(DEFAULT_SETTINGS),),
+            )
 
     @contextmanager
     def connect(self):
@@ -100,15 +101,20 @@ class Store:
         with self.connect() as db:
             cursor = db.execute(
                 f"INSERT INTO {table} ({','.join(keys)}) VALUES ({','.join('?' for _ in keys)})",
-                [values[k] for k in keys])
+                [values[k] for k in keys],
+            )
             return cursor.lastrowid
 
     def settings(self):
-        return json.loads(self.rows("SELECT value_json FROM settings WHERE id=1")[0]["value_json"])
+        return json.loads(
+            self.rows("SELECT value_json FROM settings WHERE id=1")[0]["value_json"]
+        )
 
     def save_settings(self, value):
         with self.connect() as db:
-            db.execute("UPDATE settings SET value_json=? WHERE id=1", (json.dumps(value),))
+            db.execute(
+                "UPDATE settings SET value_json=? WHERE id=1", (json.dumps(value),)
+            )
 
     def calibration(self):
         rows = self.rows("SELECT * FROM calibrations WHERE active=1")
@@ -122,29 +128,57 @@ class Store:
                 """INSERT INTO calibrations
                 (at,dry_raw,wet_raw,dry_capture_id,wet_capture_id,active,source,note)
                 VALUES(?,?,?,?,?,1,?,?)""",
-                (at, dry["raw"], wet["raw"], dry["id"], wet["id"], source, note))
-            db.execute("UPDATE settings SET value_json=? WHERE id=1", (json.dumps(settings),))
+                (at, dry["raw"], wet["raw"], dry["id"], wet["id"], source, note),
+            )
+            db.execute(
+                "UPDATE settings SET value_json=? WHERE id=1", (json.dumps(settings),)
+            )
             return cursor.lastrowid
 
     def latest_captures(self):
-        return {kind: next(iter(self.rows(
-            "SELECT * FROM captures WHERE kind=? ORDER BY id DESC LIMIT 1", (kind,))), None)
-            for kind in ("dry", "wet")}
+        return {
+            kind: next(
+                iter(
+                    self.rows(
+                        "SELECT * FROM captures WHERE kind=? ORDER BY id DESC LIMIT 1",
+                        (kind,),
+                    )
+                ),
+                None,
+            )
+            for kind in ("dry", "wet")
+        }
 
     def history(self, limit=720):
-        return list(reversed(self.rows(
-            "SELECT * FROM readings ORDER BY id DESC LIMIT ?", (limit,))))
+        return list(
+            reversed(
+                self.rows("SELECT * FROM readings ORDER BY id DESC LIMIT ?", (limit,))
+            )
+        )
 
     def summary(self):
         with self.connect() as db:
             return {
-                "reading_count": db.execute("SELECT count(*) FROM readings").fetchone()[0],
-                "water_total_ml": db.execute("SELECT coalesce(sum(volume_ml),0) FROM watering").fetchone()[0],
-                "water_event_count": db.execute("SELECT count(*) FROM watering").fetchone()[0],
+                "reading_count": db.execute("SELECT count(*) FROM readings").fetchone()[
+                    0
+                ],
+                "water_total_ml": db.execute(
+                    "SELECT coalesce(sum(volume_ml),0) FROM watering"
+                ).fetchone()[0],
+                "water_event_count": db.execute(
+                    "SELECT count(*) FROM watering"
+                ).fetchone()[0],
             }
 
     def export_csv(self, table):
-        if table not in {"readings", "watering", "events", "observations", "calibrations", "captures"}:
+        if table not in {
+            "readings",
+            "watering",
+            "events",
+            "observations",
+            "calibrations",
+            "captures",
+        }:
             raise ValueError("Unknown export")
         with self.connect() as db:
             cur = db.execute(f"SELECT * FROM {table} ORDER BY id")
@@ -156,7 +190,12 @@ class Store:
                 stream.seek(0)
                 stream.truncate(0)
                 # Keep user notes from becoming formulas when opened in a spreadsheet.
-                safe = ["'" + v if isinstance(v, str) and v.lstrip().startswith(("=", "+", "-", "@"))
-                        else v for v in row]
+                safe = [
+                    "'" + v
+                    if isinstance(v, str)
+                    and v.lstrip().startswith(("=", "+", "-", "@"))
+                    else v
+                    for v in row
+                ]
                 writer.writerow(safe)
                 yield stream.getvalue()

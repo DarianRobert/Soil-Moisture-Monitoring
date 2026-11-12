@@ -13,6 +13,7 @@ from app import create_app, load_config
 from core import Engine
 from store import Store
 
+
 class AnalyticsTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -22,16 +23,50 @@ class AnalyticsTests(unittest.TestCase):
     def tearDown(self):
         self.temp.cleanup()
 
-    def reading(self, at, seq, state="WATER_NEEDED", stream="stream-a", source="hardware", index=10, flags=""):
-        return self.store.insert("readings", dict(at=at, stream_id=stream, seq=seq,
-            uptime_ms=seq*1000, raw=64, burst_min=63, burst_max=65,
-            calibration_id=None, moisture_index=index, index_unclamped=index,
-            state=state, flags=flags, source=source))
+    def reading(
+        self,
+        at,
+        seq,
+        state="WATER_NEEDED",
+        stream="stream-a",
+        source="hardware",
+        index=10,
+        flags="",
+    ):
+        return self.store.insert(
+            "readings",
+            dict(
+                at=at,
+                stream_id=stream,
+                seq=seq,
+                uptime_ms=seq * 1000,
+                raw=64,
+                burst_min=63,
+                burst_max=65,
+                calibration_id=None,
+                moisture_index=index,
+                index_unclamped=index,
+                state=state,
+                flags=flags,
+                source=source,
+            ),
+        )
 
     def water(self, at, volume, note="", source="hardware"):
-        return self.store.insert("watering", dict(at=at, volume_ml=volume,
-            operator="test", note=note, reading_id=None, raw_before=None,
-            index_before=None, calibration_id=None, source=source))
+        return self.store.insert(
+            "watering",
+            dict(
+                at=at,
+                volume_ml=volume,
+                operator="test",
+                note=note,
+                reading_id=None,
+                raw_before=None,
+                index_before=None,
+                calibration_id=None,
+                source=source,
+            ),
+        )
 
     def test_sast_midnight_splits_observed_durations(self):
         self.reading("2026-10-20T21:59:58.000Z", 1)
@@ -91,7 +126,11 @@ class AnalyticsTests(unittest.TestCase):
         self.assertIsNone(d["prediction_summary"]["mean_difference_ml"])
 
     def test_invalid_parameters_are_rejected(self):
-        for kwargs in [dict(selected_date="bad"), dict(scope="other"), dict(selected_run="999")]:
+        for kwargs in [
+            dict(selected_date="bad"),
+            dict(scope="other"),
+            dict(selected_run="999"),
+        ]:
             with self.subTest(kwargs=kwargs), self.assertRaises(ValueError):
                 self.service.payload(**kwargs)
 
@@ -100,17 +139,25 @@ class AnalyticsTests(unittest.TestCase):
         app = create_app(engine, "analytics-test-password")
         client = app.test_client()
         self.assertEqual(client.get("/history").status_code, 401)
-        auth = {"Authorization": "Basic " + base64.b64encode(b"garden:analytics-test-password").decode()}
+        auth = {
+            "Authorization": "Basic "
+            + base64.b64encode(b"garden:analytics-test-password").decode()
+        }
         with self.store.connect() as db:
             before = list(db.iterdump())
         response = client.get("/api/analytics?date=2026-10-20", headers=auth)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(client.get("/history", headers=auth).status_code, 200)
-        self.assertEqual(client.get("/api/analytics?date=bad", headers=auth).status_code, 400)
+        self.assertEqual(
+            client.get("/api/analytics?date=bad", headers=auth).status_code, 400
+        )
         with self.store.connect() as db:
             self.assertEqual(before, list(db.iterdump()))
         self.assertIn("default-src 'self'", response.headers["Content-Security-Policy"])
-        self.assertEqual(client.post("/api/settings", json={}, headers=auth).status_code, 403)
+        self.assertEqual(
+            client.post("/api/settings", json={}, headers=auth).status_code, 403
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

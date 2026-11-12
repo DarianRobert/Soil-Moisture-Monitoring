@@ -1,4 +1,3 @@
-
 import json
 import logging
 import math
@@ -17,17 +16,24 @@ LOG = logging.getLogger(__name__)
 def select_port(configured):
     if configured != "auto":
         return configured
-    candidates = sorted(p.device for p in list_ports.comports()
-                        if p.device.startswith(("/dev/ttyACM", "/dev/ttyUSB")))
+    candidates = sorted(
+        p.device
+        for p in list_ports.comports()
+        if p.device.startswith(("/dev/ttyACM", "/dev/ttyUSB"))
+    )
     if len(candidates) != 1:
         raise ValueError(
             f"Found {len(candidates)} USB serial ports. Connect one Uno, or set serial_port in config.json. "
-            "Use: python3 -m serial.tools.list_ports -v")
+            "Use: python3 -m serial.tools.list_ports -v"
+        )
     # Prefer a stable by-id link when the board provides one.
     by_id = Path("/dev/serial/by-id")
     if by_id.exists():
-        links = sorted(p for p in by_id.iterdir()
-                       if os.path.realpath(p) == os.path.realpath(candidates[0]))
+        links = sorted(
+            p
+            for p in by_id.iterdir()
+            if os.path.realpath(p) == os.path.realpath(candidates[0])
+        )
         if links:
             return str(links[0])
     return candidates[0]
@@ -44,7 +50,9 @@ class Collector(threading.Thread):
         while not self.stop.is_set():
             try:
                 port = select_port(self.engine.config["serial_port"])
-                options = dict(port=port, baudrate=self.engine.config["baudrate"], timeout=1)
+                options = dict(
+                    port=port, baudrate=self.engine.config["baudrate"], timeout=1
+                )
                 if os.name == "posix":
                     options["exclusive"] = True
                 with serial.Serial(**options) as connection:
@@ -69,7 +77,9 @@ class Collector(threading.Thread):
                                 self.bad_frame("Frame exceeded 512 bytes")
                             elif pending.endswith(b"\n"):
                                 try:
-                                    frame = parse_frame(bytes(pending), self.engine.config["node_id"])
+                                    frame = parse_frame(
+                                        bytes(pending), self.engine.config["node_id"]
+                                    )
                                     self.engine.ingest(frame)
                                 except ValueError as exc:
                                     self.bad_frame(str(exc))
@@ -83,7 +93,9 @@ class Collector(threading.Thread):
                 # A disk/DB error must not leave the web display apparently healthy.
                 LOG.exception("Collector stopped due to an unexpected error")
                 self.engine.connected = False
-                self.engine.error = "Collector stopped. Check the terminal/service log and disk space."
+                self.engine.error = (
+                    "Collector stopped. Check the terminal/service log and disk space."
+                )
                 return
 
     def bad_frame(self, message):
@@ -99,13 +111,23 @@ class Collector(threading.Thread):
         start = time.monotonic()
         seq = 0
         while not self.stop.is_set():
-            elapsed = time.monotonic()-start
-            raw = int(375+225*math.cos(elapsed/35))
-            frame = parse_frame(json.dumps({
-                "v": 1, "node": self.engine.config["node_id"], "seq": seq,
-                "uptime_ms": int(elapsed*1000) % 2**32,
-                "raw": raw, "n": 9, "min": raw-2, "max": raw+2,
-            }), self.engine.config["node_id"])
+            elapsed = time.monotonic() - start
+            raw = int(375 + 225 * math.cos(elapsed / 35))
+            frame = parse_frame(
+                json.dumps(
+                    {
+                        "v": 1,
+                        "node": self.engine.config["node_id"],
+                        "seq": seq,
+                        "uptime_ms": int(elapsed * 1000) % 2**32,
+                        "raw": raw,
+                        "n": 9,
+                        "min": raw - 2,
+                        "max": raw + 2,
+                    }
+                ),
+                self.engine.config["node_id"],
+            )
             self.engine.ingest(frame)
             seq += 1
             self.stop.wait(5)

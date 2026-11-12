@@ -151,3 +151,12 @@ The earlier report-only portfolio copy, including its LaTeX source and diagrams,
 Keolin Naicker, Lokadi Naicker, Arjun Ramphal, Darian Robert and Ntethelelo Shabalala.
 
 This was a group project for **COMP717A Contemporary Topics in Computer Science A, University of KwaZulu-Natal**.
+
+## Source maintenance checks
+
+```bash
+python -m unittest discover -s tests -v
+node --test tests/test_dry_warning.js
+```
+
+The Python suite also checks garden/demo backups with committed SQLite WAL data, optional configuration and missing databases. The backup command writes a temporary archive before publishing it and closes both database connections. Sensor calibration, decision thresholds and watering calculations are unchanged by the formatting pass. Hardware checks still require the Uno and soil sensor.
